@@ -1,0 +1,285 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+@font-face {
+  font-family: "Editorial";
+  src: url("/fonts/editorial-thin.8c3bb4c5.woff") format("woff");
+  font-weight: 100;
+  font-style: normal;
+}
+
+body {
+  width: 100%;
+  height: 100%;
+  background: black;
+  color: white;
+  font-family: Arial, sans-serif;
+}
+
+h1 {
+  font-family: "Editorial";
+}
+
+img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.loader {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  color: white;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+  z-index: 10;
+}
+
+.count-wrapper {
+  position: relative;
+  width: 180px;
+  height: 360px;
+  clip-path: polygon(0 0, 100% 0, 100% 100%, 0% 100%);
+  will-change: transform;
+}
+
+.count {
+  position: relative;
+  width: 1080px;
+  height: 360px;
+  display: flex;
+  transform: translateX(0);
+  will-change: transform;
+}
+
+.digit {
+  position: relative;
+  width: 180px;
+  height: 360px;
+  flex-shrink: 0;
+}
+
+.digit h1 {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: max-content;
+  font-size: 360px;
+  font-weight: lighter;
+  line-height: 1;
+}
+
+.revealer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.site-info {
+  position: absolute;
+  top: 2em;
+  left: 2em;
+  display: flex;
+  flex-direction: column;
+  gap: 0.125em;
+}
+
+.line {
+  overflow: hidden;
+}
+
+.line p {
+  position: relative;
+  font-family: "Editorial";
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: -0.125px;
+  opacity: 0.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transform: translateY(18px);
+  will-change: transform;
+}
+
+.header {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  padding: 1em;
+  transform-style: preserve-3d;
+  perspective: 2000px;
+}
+
+.header h1 {
+  position: relative;
+  font-family: "Editorial";
+  font-size: 16vw;
+  font-weight: 200;
+  line-height: 0.7;
+  letter-spacing: -0.095em;
+  transform: rotateY(60deg);
+  transform-origin: bottom left;
+  will-change: transform;
+  opacity: 0;
+  white-space: nowrap;
+}
+
+.header h1:hover {
+  cursor: none;
+}
+
+/* ── CLICK MARQUEE ── */
+.click-marquee {
+  position: absolute;
+  top: 2.6em;
+  left: 0;
+  width: 100vw;
+  overflow: hidden;
+  z-index: 4;
+  pointer-events: none;
+}
+
+.marquee-track {
+  display: flex;
+  align-items: center;
+  width: max-content;
+  gap: 2.2vw;
+  will-change: transform;
+}
+
+.marquee-track span {
+  font-family: "Editorial";
+  font-size: 14px;
+  font-weight: 200;
+  color: white;
+  opacity: 0.55;
+  white-space: nowrap;
+  letter-spacing: -0.02em;
+}
+
+/* ── CURSOR FOLLOWER — plain circle ── */
+.cursor-follower {
+  position: fixed;
+  top: 0;
+  left: 0;
+ width: 130px !important;        /* lock width */
+  height: 130px !important; 
+  background: white;
+    border-radius: 50% !important;
+  pointer-events: none;
+  z-index: 20;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform: translate(-50%, -50%) scale(0);
+  will-change: transform;
+}
+
+.cursor-follower img {
+  width: 50px;
+  height: 50px;
+  object-fit: contain;
+  display: block;
+  will-change: transform;
+  border-radius: 0;
+}
+
+/* ── CURSOR CIRCLE (used inside toggle-btn) ── */
+.cursor-circle {
+  width: 135px;
+  height: 135px;
+  background: #ececec;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cursor-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+/* ── CURSOR CIRCLE SMALL — pill/orbit shape ── */
+.cursor-circle.small {
+ width: 70px;
+  height: 40px;
+  border-radius: 999px;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.cursor-circle.small img {
+  width: 28px;        /* fixed size, not 100% */
+  height: 28px;       /* fixed size, not 100% */
+  object-fit: contain; /* CHANGE from cover to contain */
+}
+
+/* ── TOGGLE BTN — pill/orbit shape ── */
+.toggle-btn {
+  position: absolute;
+  top: 2em;
+  right: 2em;
+  width: 70px;
+  height: 40px;
+  z-index: 10;
+  background: white;
+  border-radius: 999px;
+  transform: scale(0);
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.toggle-btn img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  will-change: transform;
+}
+.click-image-layer {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 6;
+}
+
+.click-pop-image {
+  position: fixed;
+  width: 50vw;
+  height: 80vh;
+  object-fit: cover;
+  pointer-events: none;
+  transform: translate(-50%, -50%);
+  will-change: transform, opacity;
+}
