@@ -3,6 +3,7 @@ import ReactDOM from "react-dom/client";
 import gsap from "gsap";
 import * as THREE from "three";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import Lenis from "lenis";
 import App from "./App";
 import "./index.css";
 
@@ -18,11 +19,19 @@ const clickImages = [airplain, butterfly, enstain, flyersPromo, headphone];
 let clickEffectReady = false;
 let activeClickImages = 0;
 let menuOpen = false;
+
 let threeRenderer = null;
 let threeScene = null;
 let threeCamera = null;
 let threeModel = null;
 let threeAnimId = null;
+
+let lenis = null;
+
+let finalCountdownStarted = false;
+let finalCountdownDone = false;
+let finalCountdownInterval = null;
+let finalRevealTriggered = false;
 
 function initThree() {
   const canvas = document.getElementById("threeCanvas");
@@ -197,6 +206,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   gsap.set(".revealer svg", { scale: 0 });
+
   gsap.set(".cursor-follower", {
     xPercent: -50,
     yPercent: -50,
@@ -259,6 +269,313 @@ document.addEventListener("DOMContentLoaded", () => {
   const menuLines = document.querySelectorAll(".menu-line");
   const scrollArea = document.getElementById("menuScrollArea");
   const modelContainer = document.getElementById("modelContainer");
+  const menuParagraphs = document.getElementById("menuParagraphs");
+
+  function createFinalCountdown() {
+    if (document.getElementById("finalCountdown")) return;
+
+    const countdown = document.createElement("div");
+    countdown.className = "final-countdown";
+    countdown.id = "finalCountdown";
+
+    countdown.innerHTML = `
+      <span class="count-num" id="countLeft">5</span>
+      <span class="count-text" id="countText">This message will self destruct in five…</span>
+      <span class="count-num" id="countRight">5</span>
+    `;
+
+    document.querySelector(".menu-content")?.appendChild(countdown);
+  }
+
+  function createFinalRevealAndCTA() {
+    if (!document.getElementById("finalRevealLayer")) {
+      const revealLayer = document.createElement("div");
+      revealLayer.className = "final-reveal-layer";
+      revealLayer.id = "finalRevealLayer";
+
+      revealLayer.innerHTML = `
+        <div class="final-revealer final-revealer-1">
+          <svg width="151" height="148" viewBox="0 0 151 148" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M75.9817 0L77.25 34.2209C78.0259 55.1571 94.8249 71.9475 115.762 72.7127L150.982 74L115.762 75.2873C94.8249 76.0525 78.0259 92.8429 77.25 113.779L75.9817 148L74.7134 113.779C73.9375 92.8429 57.1385 76.0525 36.2019 75.2873L0.981689 74L36.2018 72.7127C57.1384 71.9475 73.9375 55.1571 74.7134 34.2209L75.9817 0Z" fill="white"/>
+          </svg>
+        </div>
+
+        <div class="final-revealer final-revealer-2">
+          <svg width="151" height="148" viewBox="0 0 151 148" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M75.9817 0L77.25 34.2209C78.0259 55.1571 94.8249 71.9475 115.762 72.7127L150.982 74L115.762 75.2873C94.8249 76.0525 78.0259 92.8429 77.25 113.779L75.9817 148L74.7134 113.779C73.9375 92.8429 57.1385 76.0525 36.2019 75.2873L0.981689 74L36.2018 72.7127C57.1384 71.9475 73.9375 55.1571 74.7134 34.2209L75.9817 0Z" fill="#CDFD50"/>
+          </svg>
+        </div>
+
+        <div class="final-revealer final-revealer-3">
+          <svg width="151" height="148" viewBox="0 0 151 148" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M75.9817 0L77.25 34.2209C78.0259 55.1571 94.8249 71.9475 115.762 72.7127L150.982 74L115.762 75.2873C94.8249 76.0525 78.0259 92.8429 77.25 113.779L75.9817 148L74.7134 113.779C73.9375 92.8429 57.1385 76.0525 36.2019 75.2873L0.981689 74L36.2018 72.7127C57.1384 71.9475 73.9375 55.1571 74.7134 34.2209L75.9817 0Z" fill="black"/>
+          </svg>
+        </div>
+      `;
+
+      document.querySelector(".menu-content")?.appendChild(revealLayer);
+    }
+
+    if (!document.getElementById("finalCtaScreen")) {
+      const finalScreen = document.createElement("div");
+      finalScreen.className = "final-cta-screen";
+      finalScreen.id = "finalCtaScreen";
+
+      finalScreen.innerHTML = `
+        <div class="final-floating-card card-one">Awwwards</div>
+        <div class="final-floating-card card-two">CSSDA</div>
+        <div class="final-floating-card card-three">FWA</div>
+
+        <div class="final-cta-pill">
+          <p>Want to work with us?</p>
+          <h2>Drop us a line.</h2>
+        </div>
+      `;
+
+      document.querySelector(".menu-content")?.appendChild(finalScreen);
+    }
+  }
+
+  function triggerFinalReveal() {
+    if (finalRevealTriggered) return;
+
+    finalRevealTriggered = true;
+
+    const finalRevealLayer = document.getElementById("finalRevealLayer");
+    const whiteStar = document.querySelector(".final-revealer-1 svg");
+    const limeStar = document.querySelector(".final-revealer-2 svg");
+    const blackStar = document.querySelector(".final-revealer-3 svg");
+    const finalCtaScreen = document.getElementById("finalCtaScreen");
+    const finalCtaPill = document.querySelector(".final-cta-pill");
+    const finalCards = document.querySelectorAll(".final-floating-card");
+
+    if (
+      !finalRevealLayer ||
+      !whiteStar ||
+      !limeStar ||
+      !blackStar ||
+      !finalCtaScreen ||
+      !finalCtaPill
+    ) {
+      return;
+    }
+
+    const revealTl = gsap.timeline();
+
+    revealTl
+      .set(finalRevealLayer, {
+        opacity: 1,
+        pointerEvents: "none",
+      })
+      .set([whiteStar, limeStar, blackStar], {
+        scale: 0,
+        transformOrigin: "50% 50%",
+      })
+      .to(whiteStar, {
+        scale: 45,
+        duration: 1.5,
+        ease: "power4.inOut",
+      })
+      .to(
+        limeStar,
+        {
+          scale: 45,
+          duration: 1.5,
+          ease: "power4.inOut",
+        },
+        0.35
+      )
+      .to(
+        blackStar,
+        {
+          scale: 45,
+          duration: 1.5,
+          ease: "power4.inOut",
+        },
+        0.7
+      )
+      .to(
+        ".menu-scroll-area",
+        {
+          opacity: 0,
+          duration: 0.4,
+          ease: "power2.out",
+        },
+        0.75
+      )
+      .set(
+        finalCtaScreen,
+        {
+          opacity: 1,
+          pointerEvents: "all",
+        },
+        1.75
+      )
+      .add(() => {
+        finalCtaScreen.classList.add("is-active");
+        destroyThree();
+        destroyLenis();
+      }, 1.8)
+      .to(
+        finalRevealLayer,
+        {
+          opacity: 0,
+          duration: 0.45,
+          ease: "power2.out",
+        },
+        2.15
+      )
+      .to(
+        finalCtaPill,
+        {
+          opacity: 1,
+          y: "-50%",
+          duration: 0.8,
+          ease: "power3.out",
+        },
+        2.25
+      )
+      .to(
+        finalCards,
+        {
+          opacity: 1,
+          y: 0,
+          duration: 0.8,
+          stagger: 0.12,
+          ease: "power3.out",
+        },
+        2.35
+      );
+  }
+
+  function startFinalCountdown() {
+    if (finalCountdownStarted || finalCountdownDone) return;
+
+    const finalCountdown = document.getElementById("finalCountdown");
+    const countLeft = document.getElementById("countLeft");
+    const countRight = document.getElementById("countRight");
+    const countText = document.getElementById("countText");
+
+    if (!finalCountdown || !countLeft || !countRight || !countText) return;
+
+    finalCountdownStarted = true;
+
+    let count = 5;
+    const words = ["zero", "one", "two", "three", "four", "five"];
+
+    countLeft.textContent = count;
+    countRight.textContent = count;
+    countText.textContent = "This message will self destruct in five…";
+
+    gsap.to(finalCountdown, {
+      opacity: 1,
+      y: 0,
+      duration: 0.6,
+      ease: "power3.out",
+    });
+
+    finalCountdownInterval = setInterval(() => {
+      count--;
+
+      countLeft.textContent = count;
+      countRight.textContent = count;
+      countText.textContent = `This message will self destruct in ${words[count]}…`;
+
+      gsap.fromTo(
+        [countLeft, countRight],
+        { y: 16, opacity: 0 },
+        {
+          y: 0,
+          opacity: 1,
+          duration: 0.35,
+          ease: "power3.out",
+        }
+      );
+
+      if (count <= 0) {
+        clearInterval(finalCountdownInterval);
+        finalCountdownInterval = null;
+        finalCountdownDone = true;
+
+        gsap.to(finalCountdown, {
+          opacity: 0,
+          y: 40,
+          duration: 0.6,
+          delay: 0.4,
+          ease: "power3.inOut",
+          onComplete: triggerFinalReveal,
+        });
+      }
+    }, 1000);
+  }
+
+  function resetFinalCountdown() {
+    finalCountdownStarted = false;
+    finalCountdownDone = false;
+    finalRevealTriggered = false;
+
+    if (finalCountdownInterval) {
+      clearInterval(finalCountdownInterval);
+      finalCountdownInterval = null;
+    }
+
+    const finalCountdown = document.getElementById("finalCountdown");
+    const finalRevealLayer = document.getElementById("finalRevealLayer");
+    const finalRevealSvgs = document.querySelectorAll(".final-revealer svg");
+    const finalCtaScreen = document.getElementById("finalCtaScreen");
+    const finalCtaPill = document.querySelector(".final-cta-pill");
+    const finalCards = document.querySelectorAll(".final-floating-card");
+
+    if (finalCountdown) {
+      gsap.set(finalCountdown, {
+        opacity: 0,
+        y: 40,
+      });
+    }
+
+    if (finalRevealLayer) {
+      gsap.set(finalRevealLayer, {
+        opacity: 0,
+        pointerEvents: "none",
+      });
+    }
+
+    if (finalRevealSvgs.length) {
+      gsap.set(finalRevealSvgs, {
+        scale: 0,
+        transformOrigin: "50% 50%",
+      });
+    }
+
+    if (finalCtaScreen) {
+      finalCtaScreen.classList.remove("is-active");
+      gsap.set(finalCtaScreen, {
+        opacity: 0,
+        pointerEvents: "none",
+      });
+    }
+
+    if (finalCtaPill) {
+      gsap.set(finalCtaPill, {
+        opacity: 0,
+        y: "-40%",
+      });
+    }
+
+    if (finalCards.length) {
+      gsap.set(finalCards, {
+        opacity: 0,
+        y: 40,
+      });
+    }
+
+    gsap.set(".menu-scroll-area", {
+      opacity: 1,
+    });
+  }
+
+  createFinalCountdown();
+  createFinalRevealAndCTA();
 
   function resizeThreeRenderer() {
     if (!threeRenderer) return;
@@ -275,33 +592,103 @@ document.addEventListener("DOMContentLoaded", () => {
     const scrollTop = scrollArea.scrollTop;
 
     const modelY =
-      scrollTop -
-      modelContainer.offsetHeight / 2 +
-      window.innerHeight / 2;
+      scrollTop - modelContainer.offsetHeight / 2 + window.innerHeight / 2;
 
     gsap.set(modelContainer, {
       y: modelY,
     });
 
-    const modelViewportCenterY = window.innerHeight / 2;
+    const centerY = window.innerHeight / 2;
+    const revealRange = window.innerHeight * 0.38;
 
     menuLines.forEach((line) => {
+      const span = line.querySelector("span");
+      if (!span) return;
+
       const rect = line.getBoundingClientRect();
       const lineMidY = rect.top + rect.height / 2;
-      const diff = lineMidY - modelViewportCenterY;
+      const distance = Math.abs(lineMidY - centerY);
+
+      const strength = gsap.utils.clamp(0, 1, 1 - distance / revealRange);
 
       line.classList.remove("is-active", "is-passed");
 
-      if (diff < -30) {
+      if (lineMidY < centerY - 35) {
         line.classList.add("is-passed");
-      } else if (diff >= -30 && diff <= 80) {
+      }
+
+      if (strength > 0.72) {
         line.classList.add("is-active");
       }
+
+      gsap.to(span, {
+        opacity: 0.12 + strength * 0.88,
+        y: (1 - strength) * 16,
+        filter: `blur(${(1 - strength) * 1.2}px)`,
+        textShadow:
+          strength > 0.65
+            ? "0 0 18px rgba(255,255,255,0.45)"
+            : "0 0 0 rgba(255,255,255,0)",
+        duration: 0.35,
+        ease: "power2.out",
+        overwrite: true,
+      });
     });
+
+    const lastLine = document.querySelector('.menu-line[data-index="24"]');
+
+    if (lastLine) {
+      const rect = lastLine.getBoundingClientRect();
+      const lineMidY = rect.top + rect.height / 2;
+
+      if (lineMidY <= window.innerHeight / 2 + 90) {
+        startFinalCountdown();
+      }
+    }
+  }
+
+  function lenisRaf(time) {
+    if (lenis) {
+      lenis.raf(time * 1000);
+    }
+  }
+
+  function initLenis() {
+    if (!scrollArea || !menuParagraphs) return;
+
+    if (lenis) {
+      lenis.destroy();
+      lenis = null;
+    }
+
+    lenis = new Lenis({
+      wrapper: scrollArea,
+      content: menuParagraphs,
+      smoothWheel: true,
+      lerp: 0.075,
+      wheelMultiplier: 0.75,
+      touchMultiplier: 1.2,
+    });
+
+    lenis.on("scroll", onMenuScroll);
+
+    gsap.ticker.add(lenisRaf);
+    gsap.ticker.lagSmoothing(0);
+  }
+
+  function destroyLenis() {
+    gsap.ticker.remove(lenisRaf);
+
+    if (lenis) {
+      lenis.destroy();
+      lenis = null;
+    }
   }
 
   function openMenu() {
     menuOpen = true;
+
+    resetFinalCountdown();
 
     toggleBtn.classList.add("menu-is-open");
     menuOverlay.classList.add("is-open");
@@ -321,8 +708,18 @@ document.addEventListener("DOMContentLoaded", () => {
     gsap.set(curtainDark, { y: "-100%" });
     gsap.set(curtainLime, { y: "-100%" });
     gsap.set(socialPills, { x: 30, opacity: 0 });
-    gsap.set(".menu-pitch-wrap", { y: 20, opacity: 0 });
-    gsap.set(".menu-line span", { y: 30, opacity: 0 });
+
+    gsap.set(".menu-pitch-wrap", {
+      y: 20,
+      opacity: 0,
+    });
+
+    gsap.set(".menu-line span", {
+      y: 30,
+      opacity: 0,
+      filter: "blur(0px)",
+      textShadow: "0 0 0 rgba(255,255,255,0)",
+    });
 
     menuLines.forEach((line) => {
       line.classList.remove("is-active", "is-passed");
@@ -383,11 +780,8 @@ document.addEventListener("DOMContentLoaded", () => {
           stagger: 0.03,
           ease: "power3.out",
           onComplete: () => {
+            initLenis();
             onMenuScroll();
-
-            if (scrollArea) {
-              scrollArea.addEventListener("scroll", onMenuScroll);
-            }
           },
         },
         "-=0.3"
@@ -397,11 +791,10 @@ document.addEventListener("DOMContentLoaded", () => {
   function closeMenu() {
     menuOpen = false;
 
-    toggleBtn.classList.remove("menu-is-open");
+    resetFinalCountdown();
+    destroyLenis();
 
-    if (scrollArea) {
-      scrollArea.removeEventListener("scroll", onMenuScroll);
-    }
+    toggleBtn.classList.remove("menu-is-open");
 
     const closeTl = gsap.timeline({
       onStart: () => {
@@ -433,6 +826,8 @@ document.addEventListener("DOMContentLoaded", () => {
         gsap.set(".menu-line span", {
           opacity: 0,
           y: 30,
+          filter: "blur(0px)",
+          textShadow: "0 0 0 rgba(255,255,255,0)",
         });
 
         menuLines.forEach((line) => {
