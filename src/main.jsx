@@ -32,6 +32,7 @@ let finalCountdownStarted = false;
 let finalCountdownDone = false;
 let finalCountdownInterval = null;
 let finalRevealTriggered = false;
+let finalGravityCall = null;
 
 function initThree() {
   const canvas = document.getElementById("threeCanvas");
@@ -322,9 +323,18 @@ document.addEventListener("DOMContentLoaded", () => {
       finalScreen.id = "finalCtaScreen";
 
       finalScreen.innerHTML = `
-        <div class="final-floating-card card-one">Awwwards</div>
-        <div class="final-floating-card card-two">CSSDA</div>
-        <div class="final-floating-card card-three">FWA</div>
+        ${Array.from({ length: 15 })
+          .map((_, i) => {
+            const names = ["Awwwards", "CSSDA", "FWA"];
+            const name = names[i % names.length];
+
+            return `
+              <div class="final-floating-card card-${i}">
+                ${name}
+              </div>
+            `;
+          })
+          .join("")}
 
         <div class="final-cta-pill">
           <p>Want to work with us?</p>
@@ -334,6 +344,106 @@ document.addEventListener("DOMContentLoaded", () => {
 
       document.querySelector(".menu-content")?.appendChild(finalScreen);
     }
+  }
+
+  function makeCardInteractive(card) {
+  if (card.dataset.interactive === "true") return;
+
+  card.dataset.interactive = "true";
+  card.style.pointerEvents = "auto";
+  card.style.cursor = "grab";
+
+  const platformY = window.innerHeight * 0.28;
+
+  card.addEventListener("mouseenter", () => {
+    const currentX = Number(gsap.getProperty(card, "x")) || 0;
+
+    const nextX = gsap.utils.clamp(
+      -window.innerWidth * 0.45,
+      window.innerWidth * 0.45,
+      currentX + gsap.utils.random(-180, 180)
+    );
+
+    gsap.to(card, {
+      x: nextX,
+      y: platformY - gsap.utils.random(80, 180),
+      rotation: `+=${gsap.utils.random(-180, 180)}`,
+      duration: 0.45,
+      ease: "power3.out",
+    });
+
+    gsap.to(card, {
+      y: platformY + gsap.utils.random(10, 80),
+      duration: 0.9,
+      delay: 0.35,
+      ease: "bounce.out",
+    });
+  });
+}
+
+  function triggerFinalGravity() {
+  const finalCards = document.querySelectorAll(".final-floating-card");
+
+  finalCards.forEach((card) => {
+    gsap.to(card, {
+      y: window.innerHeight * 0.28 + gsap.utils.random(10, 80),
+      x: `+=${gsap.utils.random(-120, 120)}`,
+      rotation: `+=${gsap.utils.random(-90, 90)}`,
+      duration: gsap.utils.random(1.1, 1.7),
+      delay: gsap.utils.random(0, 0.25),
+      ease: "bounce.out",
+      onComplete: () => {
+        makeCardInteractive(card);
+      },
+    });
+  });
+}
+  function scheduleFinalGravity() {
+    if (finalGravityCall) {
+      finalGravityCall.kill();
+      finalGravityCall = null;
+    }
+
+    finalGravityCall = gsap.delayedCall(2, triggerFinalGravity);
+  }
+
+  function randomizeFinalCards() {
+    const finalCards = document.querySelectorAll(".final-floating-card");
+
+    const colors = [
+      "#ff3b30",
+      "#8e44ff",
+      "#ff8c00",
+      "#00c2ff",
+      "#ff4fd8",
+      "#00e676",
+      "#ffd60a",
+    ];
+
+    finalCards.forEach((card, i) => {
+      const bg = colors[i % colors.length];
+
+      card.dataset.interactive = "false";
+      card.style.pointerEvents = "none";
+
+      gsap.set(card, {
+        left: "50%",
+        top: "50%",
+        opacity: 0,
+        x: gsap.utils.random(
+          -window.innerWidth * 0.42,
+          window.innerWidth * 0.42
+        ),
+        y: gsap.utils.random(
+          -window.innerHeight * 0.35,
+          window.innerHeight * 0.25
+        ),
+        rotation: gsap.utils.random(-18, 18),
+        backgroundColor: bg,
+        color: "#111111",
+        zIndex: 3,
+      });
+    });
   }
 
   function triggerFinalReveal() {
@@ -359,6 +469,8 @@ document.addEventListener("DOMContentLoaded", () => {
     ) {
       return;
     }
+
+    randomizeFinalCards();
 
     const revealTl = gsap.timeline();
 
@@ -439,10 +551,10 @@ document.addEventListener("DOMContentLoaded", () => {
         finalCards,
         {
           opacity: 1,
-          y: 0,
           duration: 0.8,
-          stagger: 0.12,
+          stagger: 0.06,
           ease: "power3.out",
+          onComplete: scheduleFinalGravity,
         },
         2.35
       );
@@ -514,6 +626,11 @@ document.addEventListener("DOMContentLoaded", () => {
     finalCountdownDone = false;
     finalRevealTriggered = false;
 
+    if (finalGravityCall) {
+      finalGravityCall.kill();
+      finalGravityCall = null;
+    }
+
     if (finalCountdownInterval) {
       clearInterval(finalCountdownInterval);
       finalCountdownInterval = null;
@@ -524,7 +641,6 @@ document.addEventListener("DOMContentLoaded", () => {
     const finalRevealSvgs = document.querySelectorAll(".final-revealer svg");
     const finalCtaScreen = document.getElementById("finalCtaScreen");
     const finalCtaPill = document.querySelector(".final-cta-pill");
-    const finalCards = document.querySelectorAll(".final-floating-card");
 
     if (finalCountdown) {
       gsap.set(finalCountdown, {
@@ -559,15 +675,11 @@ document.addEventListener("DOMContentLoaded", () => {
       gsap.set(finalCtaPill, {
         opacity: 0,
         y: "-40%",
+        rotation: 0,
       });
     }
 
-    if (finalCards.length) {
-      gsap.set(finalCards, {
-        opacity: 0,
-        y: 40,
-      });
-    }
+    randomizeFinalCards();
 
     gsap.set(".menu-scroll-area", {
       opacity: 1,
@@ -708,12 +820,7 @@ document.addEventListener("DOMContentLoaded", () => {
     gsap.set(curtainDark, { y: "-100%" });
     gsap.set(curtainLime, { y: "-100%" });
     gsap.set(socialPills, { x: 30, opacity: 0 });
-
-    gsap.set(".menu-pitch-wrap", {
-      y: 20,
-      opacity: 0,
-    });
-
+    gsap.set(".menu-pitch-wrap", { y: 20, opacity: 0 });
     gsap.set(".menu-line span", {
       y: 30,
       opacity: 0,

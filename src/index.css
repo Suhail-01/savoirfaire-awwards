@@ -613,6 +613,7 @@ img {
   background: white;
   color: #111;
   display: flex;
+  cursor: pointer;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -621,7 +622,47 @@ img {
   text-align: center;
   box-shadow: 0 25px 80px rgba(0, 0, 0, 0.18);
 }
+.final-cta-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1em;
+  margin-top: 0.4em;
+}
 
+.final-email {
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  color: #111;
+  text-decoration: none;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.35s ease;
+}
+
+.final-linkedin {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: #111;
+  color: #cdfd50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  font-family: Arial, sans-serif;
+  font-size: 15px;
+  font-weight: 700;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: all 0.35s ease;
+}
+
+.final-cta-pill:hover .final-email,
+.final-cta-pill:hover .final-linkedin {
+  opacity: 1;
+  transform: translateY(0);
+}
 .final-cta-pill p {
   font-size: clamp(22px, 3vw, 42px);
   line-height: 1;
@@ -638,6 +679,8 @@ img {
 
 .final-floating-card {
   position: absolute;
+  left: 50%;
+  top: 50%;
   width: 180px;
   height: 110px;
   border-radius: 28px;
@@ -650,6 +693,7 @@ img {
   font-size: 24px;
   opacity: 0;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.16);
+  will-change: transform;
 }
 
 .card-one {
